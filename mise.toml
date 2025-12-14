@@ -1,0 +1,4 @@
+[tools]
+age = "latest"
+flutter = "latest"
+sops = "latest"
