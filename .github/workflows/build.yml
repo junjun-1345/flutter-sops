@@ -1,0 +1,68 @@
+# ============================================================
+# ⚠️ 警告: このワークフローはデモ・テスト用です
+#
+# 復号化した秘密情報がログに出力されます！
+# 本番で使用する場合は「Decrypt secrets」ステップを削除してください
+#
+# 本番環境では以下のパターンを使用しないでください:
+# - CI/CDビルド中に秘密情報を復号化しない
+# - 復号化したファイルをビルド成果物に含めない
+# - 本番ではランタイム時の秘密情報注入を検討してください
+# ============================================================
+
+name: SOPS Decrypt Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  SOPS_VERSION: "3.9.2"
+  SOPS_SHA256: "8d939bb53fe3f05b12ba4bec85c562e843b7fccba9a867cbfa626caa06a39eed"
+  AGE_VERSION: "1.2.0"
+  AGE_SHA256: "2ae71cb3ea761118937a944083f057cfd42f0ef11d197ce72fc2b8780d50c4ef"
+
+jobs:
+  decrypt-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SOPS
+        run: |
+          curl -LO "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
+          echo "${SOPS_SHA256}  sops-v${SOPS_VERSION}.linux.amd64" | sha256sum -c -
+          sudo mv "sops-v${SOPS_VERSION}.linux.amd64" /usr/local/bin/sops
+          sudo chmod +x /usr/local/bin/sops
+
+      - name: Install Age
+        run: |
+          curl -LO "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz"
+          echo "${AGE_SHA256}  age-v${AGE_VERSION}-linux-amd64.tar.gz" | sha256sum -c -
+          tar xf "age-v${AGE_VERSION}-linux-amd64.tar.gz"
+          sudo mv age/age /usr/local/bin/
+
+      - name: Setup SOPS key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.SOPS_AGE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      # ⚠️ 警告: 復号化した内容がログに出力されます
+      # 本番で使用する場合はこのステップを削除してください
+      - name: Decrypt secrets (デモ用 - ログに出力されます)
+        run: |
+          export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
+          echo "========================================"
+          echo "⚠️ 復号化した内容（デモ用）"
+          echo "========================================"
+          sops decrypt secrets.sops.yaml
+          echo "========================================"
+          echo "✅ 復号化成功"
+          echo "========================================"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.config/sops/age/keys.txt
