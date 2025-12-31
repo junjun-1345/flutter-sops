@@ -41,7 +41,8 @@ class SecretsPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildItem('API Key', AppConfig.apiKey),
-            _buildItem('DB Password', AppConfig.dbPassword),
+            _buildItem('Database URL', AppConfig.databaseUrl),
+            _buildItem('Secret Token', AppConfig.secretToken),
             const Divider(height: 32),
             const Text(
               'All Config:',
