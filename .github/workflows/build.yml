@@ -58,11 +58,18 @@ jobs:
           echo "========================================"
           echo "⚠️ 復号化した内容（デモ用）"
           echo "========================================"
-          sops decrypt secrets.sops.yaml
+          sops -d --input-type dotenv --output-type dotenv lib/.env.enc
           echo "========================================"
           echo "✅ 復号化成功"
           echo "========================================"
 
+      - name: Decrypt for Flutter build
+        run: |
+          export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
+          sops -d --input-type dotenv --output-type dotenv lib/.env.enc > lib/.env
+
       - name: Cleanup
         if: always()
-        run: rm -f ~/.config/sops/age/keys.txt
+        run: |
+          rm -f ~/.config/sops/age/keys.txt
+          rm -f lib/.env
