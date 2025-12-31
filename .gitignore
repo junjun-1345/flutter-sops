@@ -47,6 +47,7 @@ app.*.map.json
 # SOPS - 復号化されたファイル
 secrets.yaml
 assets/config/secrets.yaml
+lib/.env
 
 # Age秘密鍵
 keys.txt
