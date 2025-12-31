@@ -155,8 +155,7 @@ jobs:
       - name: Decrypt secrets
         run: |
           export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
-          mkdir -p assets/config
-          sops decrypt secrets.sops.yaml > assets/config/secrets.yaml
+          sops -d --input-type dotenv --output-type dotenv lib/.env.enc > lib/.env
 
       - uses: subosito/flutter-action@v2
         with:
@@ -169,7 +168,7 @@ jobs:
         if: always()
         run: |
           rm -f ~/.config/sops/age/keys.txt
-          rm -f assets/config/secrets.yaml
+          rm -f lib/.env
 ```
 
 ## ファイル構成
@@ -177,9 +176,9 @@ jobs:
 ```
 project/
 ├── .sops.yaml              # SOPS設定（コミットOK）
-├── secrets.sops.yaml       # 暗号化ファイル（コミットOK）
+├── lib/.env.enc            # 暗号化ファイル（コミットOK）
+├── lib/.env                # 復号化ファイル（gitignore）
 ├── .github/workflows/
-├── assets/config/          # 復号化先
 ├── lib/config/app_config.dart
 └── .gitignore
 ```
@@ -187,7 +186,42 @@ project/
 ## .gitignore
 
 ```gitignore
-secrets.yaml
-assets/config/secrets.yaml
+lib/.env
 keys.txt
+```
+
+## .env ファイルの暗号化
+
+### ファイル構成
+
+```
+lib/.env.enc  ← 暗号化済み（Gitにコミット）
+lib/.env      ← 復号済み（.gitignoreで除外、Flutterが読み込む）
+```
+
+### 暗号化
+
+```bash
+# 平文の .env を作成
+cat > lib/.env << 'EOF'
+API_KEY=your-api-key
+DATABASE_URL=your-database-url
+EOF
+
+# 暗号化して .env.enc として保存
+sops -e --input-type dotenv --output-type dotenv lib/.env > lib/.env.enc
+```
+
+### 復号
+
+```bash
+# Flutter 用に復号
+sops -d --input-type dotenv --output-type dotenv lib/.env.enc > lib/.env
+```
+
+### 編集
+
+```bash
+# 暗号化ファイルを直接編集（復号→編集→再暗号化を自動で行う）
+sops --input-type dotenv --output-type dotenv lib/.env.enc
 ```
